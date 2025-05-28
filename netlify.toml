@@ -1,0 +1,23 @@
+[build]
+  # Frontend build directory
+  base = "location-tracker/frontend"
+  publish = ".next"
+  command = "npm run build"
+
+[dev]
+  # Frontend dev command
+  command = "npm run dev"
+  targetPort = 3000
+  port = 8888
+  framework = "nextjs"
+
+[[redirects]]
+  from = "/api/*"
+  to = "http://localhost:5000/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
