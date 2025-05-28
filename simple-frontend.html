@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Location Tracker Demo</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #4a90e2;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .card-header {
+            background-color: #f0f0f0;
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+            font-weight: bold;
+        }
+        .card-body {
+            padding: 15px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+        }
+        #map {
+            height: 500px;
+            width: 100%;
+        }
+        .btn {
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn:hover {
+            background-color: #3a80d2;
+        }
+        .order-item {
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .status-assigned {
+            background-color: #cce5ff;
+            color: #004085;
+        }
+        .status-in-transit {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status-delivered {
+            background-color: #c3e6cb;
+            color: #155724;
+        }
+        .login-form {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+        .tab.active {
+            border-bottom: 2px solid #4a90e2;
+            font-weight: bold;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Real-Time Location Tracker</h1>
+        <p>For Multivendor Delivery Platform</p>
+    </div>
+
+    <div class="container">
+        <div class="tabs">
+            <div class="tab active" data-tab="login">Login</div>
+            <div class="tab" data-tab="register">Register</div>
+            <div class="tab" data-tab="customer">Customer</div>
+            <div class="tab" data-tab="vendor">Vendor</div>
+            <div class="tab" data-tab="delivery">Delivery</div>
+        </div>
+
+        <div id="login" class="tab-content active">
+            <div class="card login-form">
+                <div class="card-header">
+                    Login to Your Account
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" placeholder="Enter your email">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" placeholder="Enter your password">
+                    </div>
+                    <div class="form-group">
+                        <label for="role">Role</label>
+                        <select id="role" class="form-control">
+                            <option value="customer">Customer</option>
+                            <option value="vendor">Vendor</option>
+                            <option value="delivery">Delivery Partner</option>
+                        </select>
+                    </div>
+                    <button id="login-btn" class="btn">Login</button>
+                    <p id="login-message" style="color: red; margin-top: 10px;"></p>
+                    <p style="margin-top: 15px; text-align: center;">Don't have an account? <a href="#" class="tab-link" data-tab="register">Register here</a></p>
+                </div>
+            </div>
+        </div>
+
+        <div id="register" class="tab-content">
+            <div class="card login-form">
+                <div class="card-header">
+                    Create a New Account
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="reg-name">Full Name</label>
+                        <input type="text" id="reg-name" placeholder="Enter your full name">
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-email">Email</label>
+                        <input type="email" id="reg-email" placeholder="Enter your email">
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-password">Password</label>
+                        <input type="password" id="reg-password" placeholder="Enter your password">
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-role">Role</label>
+                        <select id="reg-role" class="form-control">
+                            <option value="customer">Customer</option>
+                            <option value="vendor">Vendor</option>
+                            <option value="delivery">Delivery Partner</option>
+                        </select>
+                    </div>
+                    <button id="register-btn" class="btn">Register</button>
+                    <p id="register-message" style="color: red; margin-top: 10px;"></p>
+                    <p style="margin-top: 15px; text-align: center;">Already have an account? <a href="#" class="tab-link" data-tab="login">Login here</a></p>
+                </div>
+            </div>
+        </div>
+
+        <div id="customer" class="tab-content">
+            <div class="grid">
+                <div>
+                    <div class="card">
+                        <div class="card-header">
+                            Your Orders
+                        </div>
+                        <div class="card-body">
+                            <div id="customer-orders">
+                                Loading orders...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="card">
+                        <div class="card-header">
+                            Track Your Order
+                        </div>
+                        <div class="card-body">
+                            <div id="map"></div>
+                            <div id="tracking-info" style="margin-top: 15px;">
+                                Select an order to track
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="vendor" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    Vendor Dashboard
+                </div>
+                <div class="card-body">
+                    <h2>Your Orders</h2>
+                    <div id="vendor-orders">
+                        Loading orders...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="delivery" class="tab-content">
+            <div class="grid">
+                <div>
+                    <div class="card">
+                        <div class="card-header">
+                            Assigned Orders
+                        </div>
+                        <div class="card-body">
+                            <div id="delivery-orders">
+                                Loading orders...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="card">
+                        <div class="card-header">
+                            Location Simulator
+                        </div>
+                        <div class="card-body">
+                            <div id="simulator-map" style="height: 300px;"></div>
+                            <div style="margin-top: 15px;">
+                                <button id="start-delivery-btn" class="btn" disabled>Start Delivery</button>
+                                <button id="update-location-btn" class="btn" disabled>Update Location</button>
+                                <button id="complete-delivery-btn" class="btn" disabled>Complete Delivery</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let map = null;
+        let simulatorMap = null;
+        let deliveryMarker = null;
+        let destinationMarker = null;
+        let socket = null;
+        let currentUser = null;
+        let token = null;
+        let selectedOrder = null;
+        let isTrackingActive = false;
+        
+        // API URL
+        const API_URL = 'http://localhost:5000/api';
+        const SOCKET_URL = 'http://localhost:5000';
+
+        // Initialize maps when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Tab switching
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    
+                    this.classList.add('active');
+                    document.getElementById(this.dataset.tab).classList.add('active');
+                    
+                    // Initialize maps when tabs are shown
+                    if (this.dataset.tab === 'customer' && !map) {
+                        initCustomerMap();
+                    }
+                    if (this.dataset.tab === 'delivery' && !simulatorMap) {
+                        initSimulatorMap();
+                    }
+                });
+            });
+
+            // Login button event
+            document.getElementById('login-btn').addEventListener('click', login);
+
+            // Check if user is already logged in
+            const savedToken = localStorage.getItem('token');
+            const savedUser = localStorage.getItem('user');
+            
+            if (savedToken && savedUser) {
+                token = savedToken;
+                currentUser = JSON.parse(savedUser);
+                showDashboard(currentUser.role);
+                connectSocket();
+                
+                if (currentUser.role === 'customer') {
+                    fetchCustomerOrders();
+                } else if (currentUser.role === 'vendor') {
+                    fetchVendorOrders();
+                } else if (currentUser.role === 'delivery') {
+                    fetchDeliveryOrders();
+                }
+            }
+        });
+
+        // Initialize customer map
+        function initCustomerMap() {
+            map = L.map('map').setView([40.7128, -74.006], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+        }
+
+        // Initialize simulator map
+        function initSimulatorMap() {
+            simulatorMap = L.map('simulator-map').setView([40.7128, -74.006], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(simulatorMap);
+            
+            // Add click event to simulator map
+            simulatorMap.on('click', function(e) {
+                if (deliveryMarker) {
+                    deliveryMarker.setLatLng(e.latlng);
+                } else {
+                    deliveryMarker = L.marker(e.latlng).addTo(simulatorMap);
+                }
+                
+                document.getElementById('update-location-btn').disabled = !selectedOrder || selectedOrder.status !== 'in_transit';
+            });
+        }
+
+        // Login function
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const role = document.getElementById('role').value;
+            
+            if (!email || !password) {
+                document.getElementById('login-message').textContent = 'Please enter email and password';
+                return;
+            }
+            
+            try {
+                // For demo purposes, we'll use hardcoded credentials
+                if (email === 'customer@example.com' && password === 'password') {
+                    currentUser = {
+                        id: '1',
+                        name: 'Demo Customer',
+                        email: 'customer@example.com',
+                        role: 'customer'
+                    };
+                    token = 'demo_token';
+                    
+                    localStorage.setItem('token', token);
+                    localStorage.setItem('user', JSON.stringify(currentUser));
+                    
+                    showDashboard('customer');
+                    connectSocket();
+                    fetchCustomerOrders();
+                    return;
+                }
+                
+                if (email === 'vendor@example.com' && password === 'password') {
+                    currentUser = {
+                        id: '2',
+                        name: 'Demo Vendor',
+                        email: 'vendor@example.com',
+                        role: 'vendor'
+                    };
+                    token = 'demo_token';
+                    
+                    localStorage.setItem('token', token);
+                    localStorage.setItem('user', JSON.stringify(currentUser));
+                    
+                    showDashboard('vendor');
+                    connectSocket();
+                    fetchVendorOrders();
+                    return;
+                }
+                
+                if (email === 'delivery@example.com' && password === 'password') {
+                    currentUser = {
+                        id: '3',
+                        name: 'Demo Delivery',
+                        email: 'delivery@example.com',
+                        role: 'delivery'
+                    };
+                    token = 'demo_token';
+                    
+                    localStorage.setItem('token', token);
+                    localStorage.setItem('user', JSON.stringify(currentUser));
+                    
+                    showDashboard('delivery');
+                    connectSocket();
+                    fetchDeliveryOrders();
+                    return;
+                }
+                
+                document.getElementById('login-message').textContent = 'Invalid credentials';
+            } catch (error) {
+                console.error('Login error:', error);
+                document.getElementById('login-message').textContent = 'Login failed';
+            }
+        }
+
+        // Show dashboard based on role
+        function showDashboard(role) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            document.querySelector(`.tab[data-tab="${role}"]`).classList.add('active');
+            document.getElementById(role).classList.add('active');
+            
+            if (role === 'customer' && !map) {
+                initCustomerMap();
+            }
+            if (role === 'delivery' && !simulatorMap) {
+                initSimulatorMap();
+            }
+        }
+
+        // Connect to Socket.IO
+        function connectSocket() {
+            socket = io(SOCKET_URL, {
+                auth: {
+                    token: token
+                }
+            });
+            
+            socket.on('connect', () => {
+                console.log('Connected to Socket.IO');
+            });
+            
+            socket.on('error', (error) => {
+                console.error('Socket error:', error);
+            });
+            
+            if (currentUser.role === 'customer') {
+                socket.on('location:updated', (data) => {
+                    if (isTrackingActive && selectedOrder && data.orderId === selectedOrder._id) {
+                        updateDeliveryMarker(data.location.coordinates);
+                    }
+                });
+                
+                socket.on('delivery:status', (data) => {
+                    if (selectedOrder && data.orderId === selectedOrder._id) {
+                        selectedOrder.status = data.status;
+                        fetchCustomerOrders();
+                        
+                        if (data.status === 'delivered') {
+                            isTrackingActive = false;
+                            document.getElementById('tracking-info').innerHTML = 'Order has been delivered!';
+                        }
+                    }
+                });
+            }
+        }
+
+        // Fetch customer orders
+        function fetchCustomerOrders() {
+            // For demo purposes, we'll use mock data
+            const mockOrders = [
+                {
+                    _id: '1',
+                    orderNumber: 'ORD-001',
+                    vendor: {
+                        _id: '1',
+                        name: 'Restaurant A'
+                    },
+                    deliveryPartner: {
+                        _id: '1',
+                        name: 'John Delivery'
+                    },
+                    status: 'in_transit',
+                    deliveryAddress: {
+                        street: '123 Main St',
+                        city: 'New York',
+                        state: 'NY',
+                        postalCode: '10001',
+                        country: 'USA'
+                    },
+                    totalAmount: 25.99,
+                    createdAt: '2023-04-15T10:30:00Z'
+                },
+                {
+                    _id: '2',
+                    orderNumber: 'ORD-002',
+                    vendor: {
+                        _id: '2',
+                        name: 'Restaurant B'
+                    },
+                    deliveryPartner: null,
+                    status: 'pending',
+                    deliveryAddress: {
+                        street: '456 Elm St',
+                        city: 'New York',
+                        state: 'NY',
+                        postalCode: '10002',
+                        country: 'USA'
+                    },
+                    totalAmount: 18.50,
+                    createdAt: '2023-04-16T14:20:00Z'
+                }
+            ];
+            
+            renderCustomerOrders(mockOrders);
+        }
+
+        // Render customer orders
+        function renderCustomerOrders(orders) {
+            const container = document.getElementById('customer-orders');
+            
+            if (orders.length === 0) {
+                container.innerHTML = '<p>No orders found.</p>';
+                return;
+            }
+            
+            let html = '';
+            
+            orders.forEach(order => {
+                html += `
+                    <div class="order-item">
+                        <h3>${order.orderNumber}</h3>
+                        <p>Vendor: ${order.vendor.name}</p>
+                        <p>Delivery: ${order.deliveryPartner ? order.deliveryPartner.name : 'Not assigned'}</p>
+                        <p>Amount: $${order.totalAmount.toFixed(2)}</p>
+                        <p>Date: ${new Date(order.createdAt).toLocaleDateString()}</p>
+                        <p>Status: <span class="status-badge status-${order.status}">${order.status}</span></p>
+                        ${order.status === 'in_transit' ? `<button class="btn" onclick="trackOrder('${order._id}')">Track Order</button>` : ''}
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            
+            // Add track order function to window
+            window.trackOrder = function(orderId) {
+                const order = orders.find(o => o._id === orderId);
+                if (order) {
+                    selectedOrder = order;
+                    isTrackingActive = true;
+                    
+                    // For demo, create a random location near NYC
+                    const lat = 40.7128 + (Math.random() - 0.5) * 0.05;
+                    const lng = -74.006 + (Math.random() - 0.5) * 0.05;
+                    
+                    updateDeliveryMarker({ latitude: lat, longitude: lng });
+                    
+                    document.getElementById('tracking-info').innerHTML = `
+                        <h3>Tracking Order: ${order.orderNumber}</h3>
+                        <p>Delivery Partner: ${order.deliveryPartner ? order.deliveryPartner.name : 'Not assigned'}</p>
+                        <p>Status: <span class="status-badge status-${order.status}">${order.status}</span></p>
+                    `;
+                }
+            };
+        }
+
+        // Update delivery marker on map
+        function updateDeliveryMarker(coordinates) {
+            if (!map) return;
+            
+            const latlng = [coordinates.latitude, coordinates.longitude];
+            
+            if (deliveryMarker) {
+                deliveryMarker.setLatLng(latlng);
+            } else {
+                deliveryMarker = L.marker(latlng).addTo(map);
+                deliveryMarker.bindPopup('Delivery Partner').openPopup();
+            }
+            
+            map.setView(latlng, 15);
+        }
+
+        // Fetch vendor orders
+        function fetchVendorOrders() {
+            // For demo purposes, we'll use mock data
+            const mockOrders = [
+                {
+                    _id: '1',
+                    orderNumber: 'ORD-001',
+                    customer: {
+                        _id: '1',
+                        name: 'John Customer'
+                    },
+                    deliveryPartner: {
+                        _id: '1',
+                        name: 'John Delivery'
+                    },
+                    status: 'in_transit',
+                    deliveryAddress: {
+                        street: '123 Main St',
+                        city: 'New York',
+                        state: 'NY',
+                        postalCode: '10001',
+                        country: 'USA'
+                    },
+                    totalAmount: 25.99,
+                    createdAt: '2023-04-15T10:30:00Z'
+                },
+                {
+                    _id: '2',
+                    orderNumber: 'ORD-002',
+                    customer: {
+                        _id: '2',
+                        name: 'Jane Customer'
+                    },
+                    deliveryPartner: null,
+                    status: 'pending',
+                    deliveryAddress: {
+                        street: '456 Elm St',
+                        city: 'New York',
+                        state: 'NY',
+                        postalCode: '10002',
+                        country: 'USA'
+                    },
+                    totalAmount: 18.50,
+                    createdAt: '2023-04-16T14:20:00Z'
+                }
+            ];
+            
+            renderVendorOrders(mockOrders);
+        }
+
+        // Render vendor orders
+        function renderVendorOrders(orders) {
+            const container = document.getElementById('vendor-orders');
+            
+            if (orders.length === 0) {
+                container.innerHTML = '<p>No orders found.</p>';
+                return;
+            }
+            
+            let html = '';
+            
+            orders.forEach(order => {
+                html += `
+                    <div class="order-item">
+                        <h3>${order.orderNumber}</h3>
+                        <p>Customer: ${order.customer.name}</p>
+                        <p>Amount: $${order.totalAmount.toFixed(2)}</p>
+                        <p>Date: ${new Date(order.createdAt).toLocaleDateString()}</p>
+                        <p>Status: <span class="status-badge status-${order.status}">${order.status}</span></p>
+                        ${order.status === 'pending' ? `
+                            <div style="margin-top: 10px;">
+                                <select id="delivery-partner-${order._id}" class="form-control">
+                                    <option value="">Select Delivery Partner</option>
+                                    <option value="1">John Delivery</option>
+                                    <option value="2">Jane Delivery</option>
+                                </select>
+                                <button class="btn" style="margin-top: 5px;" onclick="assignDeliveryPartner('${order._id}')">Assign</button>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            
+            // Add assign delivery partner function to window
+            window.assignDeliveryPartner = function(orderId) {
+                const selectElement = document.getElementById(`delivery-partner-${orderId}`);
+                const deliveryPartnerId = selectElement.value;
+                
+                if (!deliveryPartnerId) {
+                    alert('Please select a delivery partner');
+                    return;
+                }
+                
+                // For demo purposes, just update the UI
+                alert('Delivery partner assigned successfully!');
+                fetchVendorOrders();
+            };
+        }
+
+        // Fetch delivery orders
+        function fetchDeliveryOrders() {
+            // For demo purposes, we'll use mock data
+            const mockOrders = [
+                {
+                    _id: '1',
+                    orderNumber: 'ORD-001',
+                    customer: {
+                        _id: '1',
+                        name: 'John Customer'
+                    },
+                    vendor: {
+                        _id: '1',
+                        name: 'Restaurant A'
+                    },
+                    status: 'assigned',
+                    deliveryAddress: {
+                        street: '123 Main St',
+                        city: 'New York',
+                        state: 'NY',
+                        postalCode: '10001',
+                        country: 'USA'
+                    },
+                    totalAmount: 25.99,
+                    createdAt: '2023-04-15T10:30:00Z'
+                }
+            ];
+            
+            renderDeliveryOrders(mockOrders);
+        }
+
+        // Render delivery orders
+        function renderDeliveryOrders(orders) {
+            const container = document.getElementById('delivery-orders');
+            
+            if (orders.length === 0) {
+                container.innerHTML = '<p>No orders assigned to you.</p>';
+                document.getElementById('start-delivery-btn').disabled = true;
+                document.getElementById('update-location-btn').disabled = true;
+                document.getElementById('complete-delivery-btn').disabled = true;
+                return;
+            }
+            
+            let html = '';
+            
+            orders.forEach(order => {
+                html += `
+                    <div class="order-item" onclick="selectDeliveryOrder('${order._id}')">
+                        <h3>${order.orderNumber}</h3>
+                        <p>Customer: ${order.customer.name}</p>
+                        <p>Vendor: ${order.vendor.name}</p>
+                        <p>Address: ${order.deliveryAddress.street}, ${order.deliveryAddress.city}</p>
+                        <p>Status: <span class="status-badge status-${order.status}">${order.status}</span></p>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            
+            // Add select delivery order function to window
+            window.selectDeliveryOrder = function(orderId) {
+                const order = orders.find(o => o._id === orderId);
+                if (order) {
+                    selectedOrder = order;
+                    
+                    // Enable/disable buttons based on order status
+                    document.getElementById('start-delivery-btn').disabled = order.status !== 'assigned';
+                    document.getElementById('update-location-btn').disabled = order.status !== 'in_transit';
+                    document.getElementById('complete-delivery-btn').disabled = order.status !== 'in_transit';
+                    
+                    // Set destination marker
+                    if (simulatorMap) {
+                        // For demo, create a random location near NYC
+                        const lat = 40.7128 + (Math.random() - 0.5) * 0.05;
+                        const lng = -74.006 + (Math.random() - 0.5) * 0.05;
+                        
+                        if (destinationMarker) {
+                            destinationMarker.setLatLng([lat, lng]);
+                        } else {
+                            destinationMarker = L.marker([lat, lng]).addTo(simulatorMap);
+                            destinationMarker.bindPopup('Destination').openPopup();
+                        }
+                        
+                        simulatorMap.setView([lat, lng], 15);
+                    }
+                }
+            };
+            
+            // Setup delivery buttons
+            document.getElementById('start-delivery-btn').addEventListener('click', startDelivery);
+            document.getElementById('update-location-btn').addEventListener('click', updateLocation);
+            document.getElementById('complete-delivery-btn').addEventListener('click', completeDelivery);
+        }
+
+        // Start delivery
+        function startDelivery() {
+            if (!selectedOrder) return;
+            
+            // For demo purposes, just update the UI
+            selectedOrder.status = 'in_transit';
+            
+            document.getElementById('start-delivery-btn').disabled = true;
+            document.getElementById('update-location-btn').disabled = false;
+            document.getElementById('complete-delivery-btn').disabled = false;
+            
+            alert('Delivery started!');
+            fetchDeliveryOrders();
+        }
+
+        // Update location
+        function updateLocation() {
+            if (!selectedOrder || !deliveryMarker) return;
+            
+            const latlng = deliveryMarker.getLatLng();
+            
+            // For demo purposes, just log the location
+            console.log('Location updated:', latlng);
+            
+            // If using real Socket.IO, would emit here
+            if (socket) {
+                socket.emit('location:update', {
+                    orderId: selectedOrder._id,
+                    coordinates: {
+                        latitude: latlng.lat,
+                        longitude: latlng.lng
+                    }
+                });
+            }
+            
+            alert('Location updated!');
+        }
+
+        // Complete delivery
+        function completeDelivery() {
+            if (!selectedOrder) return;
+            
+            // For demo purposes, just update the UI
+            selectedOrder.status = 'delivered';
+            
+            document.getElementById('start-delivery-btn').disabled = true;
+            document.getElementById('update-location-btn').disabled = true;
+            document.getElementById('complete-delivery-btn').disabled = true;
+            
+            alert('Delivery completed!');
+            fetchDeliveryOrders();
+        }
+    </script>
+    <script src="final-fixes.js"></script>
+    <script src="auth-flow-fix.js"></script>
+    <script src="socket-fix.js"></script>
+    <script src="map-fix-updated.js"></script>
+    <script src="delivery-fix-updated.js"></script>
+    <script src="auth-fixes-new.js"></script>
+    <script src="debug-fixes.js"></script>
+    <script src="delivery-final-fix.js"></script>
+</body>
+</html>
