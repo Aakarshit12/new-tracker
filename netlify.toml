@@ -1,8 +1,8 @@
 [build]
   # Directory with the static HTML site
   base = "/"
-  publish = "/"
-  command = "echo 'No build required for static HTML site'"
+  publish = "."
+  command = "echo 'Static HTML site ready for deployment'"
 
 [dev]
   # Static site development
