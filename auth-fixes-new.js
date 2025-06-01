@@ -92,14 +92,20 @@ document.addEventListener('DOMContentLoaded', function() {
         const password = document.getElementById('password').value;
         const role = document.getElementById('role').value;
         
-        if (!email || !password) {
-            document.getElementById('login-message').textContent = 'Please enter email and password';
+        if (!email || !password || !role) {
+            document.getElementById('login-message').textContent = 'Please fill in all fields';
             return;
         }
         
         try {
-            // For demo purposes, we'll use hardcoded credentials
+            // For demo purposes, we'll use hardcoded credentials with role validation
             if (email === 'customer@example.com' && password === 'password') {
+                // Validate role
+                if (role !== 'customer') {
+                    document.getElementById('login-message').textContent = 'Invalid role for this account. Customer accounts must use the Customer role.';
+                    return;
+                }
+                
                 window.currentUser = {
                     id: '1',
                     name: 'Demo Customer',
@@ -118,6 +124,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             if (email === 'vendor@example.com' && password === 'password') {
+                // Validate role
+                if (role !== 'vendor') {
+                    document.getElementById('login-message').textContent = 'Invalid role for this account. Vendor accounts must use the Vendor role.';
+                    return;
+                }
+                
                 window.currentUser = {
                     id: '2',
                     name: 'Demo Vendor',
@@ -136,6 +148,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             if (email === 'delivery@example.com' && password === 'password') {
+                // Validate role
+                if (role !== 'delivery') {
+                    document.getElementById('login-message').textContent = 'Invalid role for this account. Delivery Partner accounts must use the Delivery Partner role.';
+                    return;
+                }
+                
                 window.currentUser = {
                     id: '3',
                     name: 'Demo Delivery',

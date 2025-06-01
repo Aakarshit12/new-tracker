@@ -1,13 +1,17 @@
 // Authentication flow fix for the Location Tracker application
 document.addEventListener('DOMContentLoaded', function() {
-    // Check if user is logged in
-    checkAuthState();
+    // Always reset auth state on page load to ensure we start on the login page
+    resetAuthState();
     
     // Add event listener to logout button
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', logout);
     }
+    
+    // Add event listeners for login and register buttons
+    document.getElementById('login-btn').addEventListener('click', login);
+    document.getElementById('register-btn').addEventListener('click', register);
     
     // Function to check authentication state
     function checkAuthState() {
@@ -169,15 +173,23 @@ document.addEventListener('DOMContentLoaded', function() {
     window.login = function() {
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
+        const role = document.getElementById('role').value;
         
-        if (!email || !password) {
-            document.getElementById('login-message').textContent = 'Please enter email and password';
+        if (!email || !password || !role) {
+            document.getElementById('login-message').textContent = 'Please fill in all fields';
             return;
         }
         
         try {
-            // For demo purposes, we'll use hardcoded credentials
+            // For demo mode, we'll use hardcoded credentials and validate role matches
+            // Customer validation
             if (email === 'customer@example.com' && password === 'password') {
+                // Check if role matches
+                if (role !== 'customer') {
+                    document.getElementById('login-message').textContent = 'Invalid role for this account';
+                    return;
+                }
+                
                 window.currentUser = {
                     id: '1',
                     name: 'Demo Customer',
@@ -199,7 +211,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
+            // Vendor validation
             if (email === 'vendor@example.com' && password === 'password') {
+                // Check if role matches
+                if (role !== 'vendor') {
+                    document.getElementById('login-message').textContent = 'Invalid role for this account';
+                    return;
+                }
+                
                 window.currentUser = {
                     id: '2',
                     name: 'Demo Vendor',
@@ -221,7 +240,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
+            // Delivery validation
             if (email === 'delivery@example.com' && password === 'password') {
+                // Check if role matches
+                if (role !== 'delivery') {
+                    document.getElementById('login-message').textContent = 'Invalid role for this account';
+                    return;
+                }
+                
                 window.currentUser = {
                     id: '3',
                     name: 'Demo Delivery',

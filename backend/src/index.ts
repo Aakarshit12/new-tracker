@@ -10,6 +10,7 @@ import deliveryRoutes from './routes/delivery.routes';
 import orderRoutes from './routes/order.routes';
 import { setupSocketHandlers } from './services/socket.service';
 import seedData from './utils/seedData';
+import { rateLimiter } from './middleware/rate-limiter.middleware';
 
 // Load environment variables
 dotenv.config();
@@ -35,6 +36,12 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Apply rate limiter to all routes
+if (process.env.NODE_ENV === 'production') {
+  app.use(rateLimiter);
+  console.log('Rate limiting enabled for production environment');
+}
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/vendors', vendorRoutes);
@@ -51,7 +58,12 @@ setupSocketHandlers(io);
 
 // Connect to MongoDB
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/location-tracker';
-mongoose.connect(MONGODB_URI)
+
+// Add connection options for better reliability
+mongoose.connect(MONGODB_URI, {
+  serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s default
+  socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
+})
   .then(async () => {
     console.log('Connected to MongoDB');
     
