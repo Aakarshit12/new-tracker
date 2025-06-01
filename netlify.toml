@@ -1,5 +1,6 @@
-# Simple netlify.toml for static HTML site
+# Configuration for static HTML site deployment
 [build]
+  command = "npm run build"
   publish = "/"
 
 [[redirects]]

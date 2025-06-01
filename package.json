@@ -1,0 +1,16 @@
+{
+  "name": "location-tracker",
+  "version": "1.0.0",
+  "description": "Real-Time Location Tracker for Multivendor Delivery Platform",
+  "main": "index.html",
+  "scripts": {
+    "build": "echo 'No build step required for static HTML site'"
+  },
+  "keywords": [
+    "location-tracker",
+    "delivery",
+    "real-time"
+  ],
+  "author": "",
+  "license": "MIT"
+}
