@@ -4,7 +4,7 @@
   "description": "Real-Time Location Tracker for Multivendor Delivery Platform",
   "main": "index.html",
   "scripts": {
-    "build": "echo 'No build step required for static HTML site'"
+    "build": "node copy-files.js"
   },
   "keywords": [
     "location-tracker",

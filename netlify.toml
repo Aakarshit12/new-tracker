@@ -1,7 +1,7 @@
 # Configuration for static HTML site deployment
 [build]
   command = "npm run build"
-  publish = "/"
+  publish = ".next"
 
 [[redirects]]
   from = "/*"
