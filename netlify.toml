@@ -1,22 +1,6 @@
+# Simple netlify.toml for static HTML site
 [build]
-  # Directory with the static HTML site
-  base = "/"
-  publish = "."
-  command = "echo 'Static HTML site ready for deployment'"
-
-[dev]
-  # Static site development
-  command = "echo 'No dev command needed for static HTML site'"
-  port = 8888
-  framework = "#static"
-
-# For the static demo site, we don't need API redirects since we're using mock data
-# If you connect to a real backend later, uncomment and update this section
-# [[redirects]]
-#   from = "/api/*"
-#   to = "https://your-backend-url.com/api/:splat"
-#   status = 200
-#   force = true
+  publish = "/"
 
 [[redirects]]
   from = "/*"
